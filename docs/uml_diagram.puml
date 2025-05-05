@@ -1,0 +1,53 @@
+@startuml
+actor User as user
+actor Manager as manager
+actor Admin as admin
+actor Market as market
+
+rectangle "Digital Marketplace System" {
+    [User Registration]
+    [Login]
+    [Password Reset]
+    [Product Catalog]
+    [Product Search]
+    [Price Comparison]
+    [Market API]
+    [Price Aggregation]
+    [Product Synchronization]
+    [Shopping Cart]
+    [Order Processing]
+    [Purchase History]
+    [User Management]
+    [Market Management]
+    [System Configuration]
+}
+
+user --> [User Registration]
+user --> [Login]
+user --> [Product Catalog]
+user --> [Product Search]
+user --> [Price Comparison]
+user --> [Shopping Cart]
+user --> [Order Processing]
+user --> [Purchase History]
+
+manager --> [Product Management]
+manager --> [Market Integration]
+manager --> [Shopping]
+
+admin --> [Admin Panel]
+admin --> [User Management]
+admin --> [Market Management]
+admin --> [System Configuration]
+
+market --> [Market API]
+market --> [Price Aggregation]
+
+[Product Search] ..> [Price Comparison] : <<include>>
+[Order Processing] ..> [Purchase History] : <<include>>
+[Market API] ..> [Price Aggregation] : <<include>>
+
+[Product Catalog] ..> [Product Search] : <<extend>>
+[Market Integration] ..> [Product Synchronization] : <<extend>>
+[Admin Panel] ..> [System Configuration] : <<extend>>
+@enduml 

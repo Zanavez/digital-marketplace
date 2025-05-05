@@ -1,0 +1,68 @@
+@startuml
+' ER-диаграмма: связи от конкретных полей-ключей, минимизация пересечений
+
+left to right direction
+
+entity "User" as user {
+    * id : int
+    * username : string
+    * email : string
+    * role : enum
+    * first_name : string
+    * last_name : string
+    * middle_name : string
+    * phone_number : string
+}
+
+entity "Market" as market {
+    * id : int
+    * name : string
+    * url : string
+    * api_key : string
+    * api_url : string
+}
+
+entity "Product" as product {
+    * id : int
+    * name : string
+    * description : text
+    * image : file
+    * platform_price : decimal
+    * popularity : integer
+}
+
+entity "Offer" as offer {
+    * id : int
+    * price : decimal
+    * url : string
+    * market_id : int
+    * product_id : int
+}
+
+entity "Cart" as cart {
+    * id : int
+    * quantity : integer
+    * user_id : int
+    * offer_id : int
+}
+
+entity "Receipt" as receipt {
+    * id : int
+    * quantity : integer
+    * total_price : decimal
+    * purchase_date : datetime
+    * user_id : int
+    * offer_id : int
+}
+
+' Связи от конкретных полей-ключей
+cart::user_id }o--|| user::id : "FK"
+cart::offer_id }o--|| offer::id : "FK"
+
+receipt::user_id }o--|| user::id : "FK"
+receipt::offer_id }o--|| offer::id : "FK"
+
+offer::product_id }o--|| product::id : "FK"
+offer::market_id }o--|| market::id : "FK"
+
+@enduml 

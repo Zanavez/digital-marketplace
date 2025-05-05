@@ -1,0 +1,78 @@
+{% extends 'marketplace/base.html' %}
+
+{% block title %}
+    {% if object %}
+        Редактирование товара - {{ object.name }}
+    {% else %}
+        Добавление нового товара
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title mb-4">
+                    {% if object %}
+                        Редактирование товара
+                    {% else %}
+                        Добавление нового товара
+                    {% endif %}
+                </h2>
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">
+                                {{ field.label }}
+                                {% if field.field.required %}
+                                    <span class="text-danger">*</span>
+                                {% endif %}
+                            </label>
+                            
+                            {% if field.name == 'image' %}
+                                <div class="input-group">
+                                    {{ field }}
+                                </div>
+                                {% if object and object.image %}
+                                    <div class="mt-2">
+                                        <img src="{{ object.image.url }}" alt="Текущее изображение" class="img-thumbnail" style="max-height: 200px;">
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                {{ field }}
+                            {% endif %}
+                            
+                            {% if field.help_text %}
+                                <div class="form-text text-muted">
+                                    {{ field.help_text }}
+                                </div>
+                            {% endif %}
+                            
+                            {% if field.errors %}
+                                <div class="alert alert-danger mt-2">
+                                    {{ field.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'home' %}" class="btn btn-secondary">Отмена</a>
+                        <button type="submit" class="btn btn-primary">
+                            {% if object %}
+                                Сохранить изменения
+                            {% else %}
+                                Добавить товар
+                            {% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

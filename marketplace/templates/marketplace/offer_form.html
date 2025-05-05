@@ -1,0 +1,192 @@
+{% extends 'marketplace/base.html' %}
+
+{% block title %}
+    {% if object %}
+        Редактирование предложения
+    {% else %}
+        Добавление предложения
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title mb-4">
+                    {% if object %}
+                        Редактирование предложения
+                    {% else %}
+                        Добавление предложения
+                    {% endif %}
+                </h2>
+
+                {% if not object %}
+                    <div class="mb-4">
+                        <h5>Автоматический поиск предложений</h5>
+                        <form id="searchForm" class="mb-3">
+                            {% csrf_token %}
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-8">
+                                    <label for="market_select" class="form-label">Выберите маркет для поиска</label>
+                                    <select id="market_select" class="form-select" required>
+                                        <option value="">-- Выберите маркет --</option>
+                                        {% for market in markets %}
+                                            <option value="{{ market.id }}">{{ market.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        Найти предложения
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                        <div id="searchResults"></div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>Или добавьте предложение вручную</h5>
+                    </div>
+                {% endif %}
+
+                <form method="post" id="offerForm">
+                    {% csrf_token %}
+                    
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">
+                                {{ field.label }}
+                                {% if field.field.required %}
+                                    <span class="text-danger">*</span>
+                                {% endif %}
+                            </label>
+                            
+                            {% if field.name == 'product' and field.value %}
+                                <input type="hidden" name="product" value="{{ field.value }}">
+                                <p class="form-control-static">{{ field.value }}</p>
+                            {% else %}
+                                {{ field }}
+                            {% endif %}
+                            
+                            {% if field.help_text %}
+                                <div class="form-text text-muted">
+                                    {{ field.help_text }}
+                                </div>
+                            {% endif %}
+                            
+                            {% if field.errors %}
+                                <div class="alert alert-danger mt-2">
+                                    {{ field.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{% if object %}{% url 'product_detail' object.product.pk %}{% else %}{% url 'home' %}{% endif %}" 
+                           class="btn btn-secondary">
+                            Отмена
+                        </a>
+                        <div class="btn-group">
+                            <button type="submit" class="btn btn-primary">
+                                {% if object %}
+                                    Сохранить изменения
+                                {% else %}
+                                    Добавить предложение
+                                {% endif %}
+                            </button>
+                            {% if not object %}
+                                <button type="submit" name="add_another" value="1" class="btn btn-outline-primary">
+                                    Добавить и создать ещё
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.getElementById('searchForm');
+    const searchResults = document.getElementById('searchResults');
+    const productId = document.querySelector('input[name="product"]').value;
+
+    if (searchForm) {
+        searchForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const marketId = document.getElementById('market_select').value;
+            if (!marketId) {
+                alert('Пожалуйста, выберите маркет');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('market_id', marketId);
+
+            fetch(`/search-market-offers/${productId}/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                searchResults.innerHTML = data.html;
+                initAddOfferButtons();
+            })
+            .catch(error => {
+                searchResults.innerHTML = `
+                    <div class="alert alert-danger mt-3">
+                        Ошибка при поиске: ${error.message}
+                    </div>
+                `;
+            });
+        });
+    }
+
+    function initAddOfferButtons() {
+        document.querySelectorAll('.add-offer-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const formData = new FormData();
+                formData.append('market_id', this.dataset.market);
+                formData.append('price', this.dataset.price);
+                formData.append('url', this.dataset.url);
+
+                fetch(`/create-offer-from-search/${productId}/`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    alert('Предложение успешно добавлено');
+                    this.disabled = true;
+                    this.textContent = 'Добавлено';
+                    this.classList.remove('btn-success');
+                    this.classList.add('btn-secondary');
+                })
+                .catch(error => {
+                    alert(`Ошибка при добавлении предложения: ${error.message}`);
+                });
+            });
+        });
+    }
+});
+</script>
+{% endblock %}
+{% endblock %} 

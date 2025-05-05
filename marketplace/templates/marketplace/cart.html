@@ -1,0 +1,61 @@
+{% extends 'marketplace/base.html' %}
+{% load marketplace_extras %}
+
+{% block title %}Корзина - Digital Marketplace{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Корзина</h1>
+
+{% if cart_items %}
+    <div class="table-responsive">
+        <table class="table table-dark table-hover">
+            <thead>
+                <tr>
+                    <th>Товар</th>
+                    <th>Маркет</th>
+                    <th>Цена</th>
+                    <th>Количество</th>
+                    <th>Сумма</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in cart_items %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'product_detail' item.offer.product.pk %}" class="text-decoration-none">
+                                {{ item.offer.product.name }}
+                            </a>
+                        </td>
+                        <td>{{ item.offer.market.name }}</td>
+                        <td>{{ item.offer.price }} руб.</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>{{ item.offer.price|multiply:item.quantity }} руб.</td>
+                        <td>
+                            <form action="{% url 'remove_from_cart' item.id %}" method="post" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-danger">Удалить</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="4" class="text-end"><strong>Итого:</strong></td>
+                    <td><strong>{{ total }} руб.</strong></td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <div class="d-flex justify-content-end mt-4">
+        <a href="{% url 'checkout' %}" class="btn btn-success btn-lg">Перейти к оплате</a>
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        Ваша корзина пуста. <a href="{% url 'product_list' %}" class="alert-link">Перейти в каталог</a>
+    </div>
+{% endif %}
+{% endblock %} 

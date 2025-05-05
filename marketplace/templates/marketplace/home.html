@@ -1,0 +1,225 @@
+{% extends 'marketplace/base.html' %}
+
+{% block title %}Digital Marketplace - Цифровые товары{% endblock %}
+
+{% block content %}
+<div class="hero-section text-center py-5 mb-5">
+    <h1 class="display-4 mb-3 text-gradient">Добро пожаловать в Digital Marketplace</h1>
+    <p class="lead mb-4 text-light-muted">Ваш надежный источник цифровых товаров по лучшим ценам</p>
+    <div class="d-flex justify-content-center gap-3 mb-5">
+        <a href="{% url 'product_list' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-shopping-bag me-2"></i>Перейти в каталог
+        </a>
+        {% if not user.is_authenticated %}
+            <a href="{% url 'register' %}" class="btn btn-outline-light btn-lg">
+                <i class="fas fa-user-plus me-2"></i>Регистрация
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="container">
+    <h2 class="mb-4 section-title">Популярные товары</h2>
+    
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for product in products %}
+            <div class="col">
+                <div class="card h-100 product-card">
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}" class="card-img-top product-image" alt="{{ product.name }}">
+                    {% else %}
+                        <div class="card-img-top product-image-placeholder">
+                            <i class="fas fa-shopping-bag fa-3x"></i>
+                        </div>
+                    {% endif %}
+                    <div class="card-body">
+                        <h3 class="card-title h5 mb-3">{{ product.name }}</h3>
+                        <p class="card-text text-light-muted">{{ product.description|truncatewords:20 }}</p>
+                        
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div class="price-tag">
+                                {% if product.platform_price %}
+                                    <span class="price">От {{ product.platform_price }} руб.</span>
+                                {% else %}
+                                    <span class="text-muted">Цена по запросу</span>
+                                {% endif %}
+                            </div>
+                            <a href="{% url 'product_detail' product.id %}" class="btn btn-outline-primary">
+                                <i class="fas fa-info-circle me-1"></i>Подробнее
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if is_paginated %}
+        <nav class="mt-5">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link">{{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+                </li>
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .text-gradient {
+        background: linear-gradient(45deg, var(--accent-color), #4CAF50);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-fill-color: transparent;
+    }
+
+    .hero-section {
+        background: linear-gradient(to bottom, rgba(0,0,0,0.8), var(--dark-bg));
+        border-radius: 0 0 2rem 2rem;
+        margin-top: -1.5rem;
+        padding-top: 4rem;
+    }
+
+    .text-light-muted {
+        color: rgba(255,255,255,0.7);
+    }
+
+    .section-title {
+        position: relative;
+        color: var(--text-lighter);
+        padding-bottom: 0.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .section-title::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 60px;
+        height: 3px;
+        background: var(--accent-color);
+        border-radius: 3px;
+    }
+
+    .product-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border: none;
+        background: var(--card-bg);
+        overflow: hidden;
+    }
+
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+
+    .product-image {
+        height: 200px;
+        object-fit: cover;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .product-image-placeholder {
+        height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--darker-bg);
+        color: var(--text-muted);
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .price-tag {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--accent-color);
+    }
+
+    .btn-primary {
+        background: var(--accent-color);
+        border-color: var(--accent-color);
+        padding: 0.5rem 1.5rem;
+    }
+
+    .btn-primary:hover {
+        background: var(--accent-hover);
+        border-color: var(--accent-hover);
+    }
+
+    .btn-outline-primary {
+        color: var(--accent-color);
+        border-color: var(--accent-color);
+    }
+
+    .btn-outline-primary:hover {
+        background: var(--accent-color);
+        border-color: var(--accent-color);
+    }
+
+    .pagination {
+        gap: 0.5rem;
+    }
+
+    .page-link {
+        background-color: var(--card-bg);
+        border-color: var(--accent-color);
+        color: var(--text-light);
+        padding: 0.5rem 1rem;
+    }
+
+    .page-link:hover {
+        background-color: var(--accent-color);
+        border-color: var(--accent-color);
+        color: white;
+    }
+
+    .page-item.active .page-link {
+        background-color: var(--accent-color);
+        border-color: var(--accent-color);
+    }
+
+    @media (max-width: 768px) {
+        .hero-section {
+            padding: 2rem 1rem;
+        }
+
+        .display-4 {
+            font-size: 2rem;
+        }
+
+        .lead {
+            font-size: 1rem;
+        }
+    }
+</style>
+{% endblock %} 

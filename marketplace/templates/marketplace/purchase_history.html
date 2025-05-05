@@ -1,0 +1,65 @@
+{% extends 'marketplace/base.html' %}
+
+{% block title %}История покупок - Digital Marketplace{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">История покупок</h1>
+
+    {% if receipts %}
+        <div class="table-responsive">
+            <table class="table table-dark table-hover">
+                <thead>
+                    <tr>
+                        <th>№ Чека</th>
+                        <th>Дата</th>
+                        <th>Товар</th>
+                        <th>Маркет</th>
+                        <th>Количество</th>
+                        <th>Сумма</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for receipt in receipts %}
+                        <tr>
+                            <td>#{{ receipt.id }}</td>
+                            <td>{{ receipt.purchase_date|date:"d.m.Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'product_detail' receipt.offer.product.id %}" class="text-decoration-none">
+                                    {{ receipt.offer.product.name }}
+                                </a>
+                            </td>
+                            <td>{{ receipt.offer.market.name }}</td>
+                            <td>{{ receipt.quantity }}</td>
+                            <td>{{ receipt.total_price }} руб.</td>
+                            <td>
+                                <a href="{% url 'receipt_detail' receipt.id %}" class="btn btn-outline-info btn-sm">
+                                    <i class="fas fa-receipt me-1"></i>Детали чека
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <div class="d-flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-shopping-bag fa-2x text-info me-3"></i>
+                </div>
+                <div>
+                    <h5 class="alert-heading mb-2">История покупок пуста</h5>
+                    <p class="mb-0">
+                        У вас пока нет покупок. 
+                        <a href="{% url 'product_list' %}" class="alert-link">
+                            Перейти в каталог <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 

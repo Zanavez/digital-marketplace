@@ -1,0 +1,25 @@
+{% extends 'marketplace/base.html' %}
+
+{% block title %}Удаление товара - {{ object.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title mb-4">Подтверждение удаления</h2>
+                <p>Вы действительно хотите удалить товар "{{ object.name }}"?</p>
+                <p class="text-danger">Это действие нельзя будет отменить. Все связанные предложения также будут удалены.</p>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'product_detail' object.pk %}" class="btn btn-secondary">Отмена</a>
+                        <button type="submit" class="btn btn-danger">Подтвердить удаление</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

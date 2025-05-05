@@ -1,0 +1,228 @@
+{% extends 'marketplace/base.html' %}
+
+{% block title %}{{ product.name }} - Digital Marketplace{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Изображение товара -->
+    <div class="col-md-6 mb-4">
+        <div class="product-image-container">
+            {% if product.image %}
+                <img src="{{ product.image.url }}" class="img-fluid rounded shadow" alt="{{ product.name }}">
+            {% else %}
+                <div class="no-image-placeholder rounded d-flex align-items-center justify-content-center">
+                    <i class="fas fa-image fa-3x text-muted"></i>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Информация о товаре -->
+    <div class="col-md-6">
+        <div class="product-info p-4 rounded" style="background: var(--card-bg);">
+            <h1 class="display-5 mb-4 product-title">{{ product.name }}</h1>
+            
+            <div class="mb-4">
+                <h5 class="text-muted">Описание:</h5>
+                <p class="lead">{{ product.description }}</p>
+            </div>
+
+            {% if product.platform_price > 0 %}
+            <div class="mb-4 platform-price-section">
+                <h5 class="text-muted">Цена на платформе:</h5>
+                <div class="d-flex align-items-center">
+                    <p class="h2 mb-0 text-success price-value">{{ product.platform_price }} руб.</p>
+                    {% if user.is_authenticated and user.role != 'manager' %}
+                    <div class="ms-3">
+                        <a href="{% url 'add_platform_to_cart' product.pk %}" class="btn btn-success btn-lg">
+                            <i class="fas fa-shopping-cart me-2"></i>Купить на платформе
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if user.is_authenticated and user.role == 'manager' %}
+                <div class="mb-4 manager-actions">
+                    <div class="btn-group">
+                        <a href="{% url 'product_update' product.pk %}" class="btn btn-outline-primary">
+                            <i class="fas fa-edit me-2"></i>Изменить товар
+                        </a>
+                        <a href="{% url 'product_delete' product.pk %}" class="btn btn-outline-danger">
+                            <i class="fas fa-trash me-2"></i>Удалить товар
+                        </a>
+                        <a href="{% url 'offer_create' product=product.pk %}" class="btn btn-outline-success">
+                            <i class="fas fa-plus me-2"></i>Добавить предложение
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Предложения от маркетов -->
+<div class="mt-5">
+    <h2 class="mb-4 section-title">
+        <i class="fas fa-tags me-2"></i>Предложения от маркетов
+    </h2>
+    
+    {% if offers %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-store me-2"></i>Маркет</th>
+                        <th><i class="fas fa-tag me-2"></i>Цена</th>
+                        <th><i class="fas fa-shopping-cart me-2"></i>Действия</th>
+                        {% if user.is_authenticated and user.role == 'manager' %}
+                            <th><i class="fas fa-cogs me-2"></i>Управление</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for offer in offers %}
+                        <tr class="offer-row">
+                            <td>
+                                <span class="market-name">{{ offer.market.name }}</span>
+                            </td>
+                            <td>
+                                <span class="price">{{ offer.price }} руб.</span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{{ offer.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-external-link-alt me-1"></i>Перейти к маркету
+                                    </a>
+                                    {% if user.is_authenticated and user.role != 'manager' %}
+                                        <a href="{% url 'add_to_cart' offer.id %}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-cart-plus me-1"></i>В корзину
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            {% if user.is_authenticated and user.role == 'manager' %}
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{% url 'offer_update' offer.pk %}" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit me-1"></i>Изменить
+                                        </a>
+                                    </div>
+                                </td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info d-flex align-items-center">
+            <i class="fas fa-info-circle fa-2x me-3"></i>
+            <div>
+                {% if user.is_authenticated and user.role == 'manager' %}
+                    Для этого товара ещё нет предложений. 
+                    <a href="{% url 'offer_create' product=product.pk %}" class="alert-link">
+                        <i class="fas fa-plus me-1"></i>Добавить первое предложение
+                    </a>
+                {% else %}
+                    В данный момент нет доступных предложений для этого товара.
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .product-image-container {
+        background: var(--card-bg);
+        padding: 1rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .no-image-placeholder {
+        height: 400px;
+        background: var(--darker-bg);
+    }
+    
+    .product-title {
+        color: var(--accent-color);
+        font-weight: 600;
+    }
+    
+    .platform-price-section {
+        background: var(--darker-bg);
+        padding: 1.5rem;
+        border-radius: 10px;
+        border-left: 4px solid var(--accent-color);
+    }
+    
+    .price-value {
+        font-weight: 700;
+        text-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
+    }
+    
+    .section-title {
+        color: var(--accent-color);
+        font-weight: 600;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--accent-color);
+    }
+    
+    .offer-row {
+        transition: all 0.2s ease;
+    }
+    
+    .offer-row:hover {
+        background: var(--darker-bg);
+    }
+    
+    .market-name {
+        font-weight: 500;
+    }
+    
+    .manager-actions .btn {
+        padding: 0.75rem 1.5rem;
+    }
+    
+    .btn-group .btn {
+        border-radius: 6px;
+        margin: 0 2px;
+    }
+    
+    .alert {
+        background: var(--darker-bg);
+        border-left: 4px solid var(--accent-color);
+    }
+    
+    .table {
+        margin-top: 1rem;
+        border-collapse: separate;
+        border-spacing: 0 8px;
+    }
+    
+    .table th {
+        border: none;
+        color: var(--text-muted);
+        font-weight: 500;
+        padding: 1rem;
+    }
+    
+    .table td {
+        background: var(--card-bg);
+        border: none;
+        padding: 1rem;
+    }
+    
+    .table tr td:first-child {
+        border-top-left-radius: 6px;
+        border-bottom-left-radius: 6px;
+    }
+    
+    .table tr td:last-child {
+        border-top-right-radius: 6px;
+        border-bottom-right-radius: 6px;
+    }
+</style>
+{% endblock %} 

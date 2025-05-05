@@ -1,0 +1,14 @@
+{% if user.is_authenticated %}
+    <div class="d-flex align-items-center">
+        <span class="text-light me-3">{{ user.get_full_name|default:user.username }}</span>
+        <form method="post" action="{% url 'logout' %}" class="m-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-link text-light text-decoration-none">Выйти</button>
+        </form>
+    </div>
+{% else %}
+    <div>
+        <a href="{% url 'login' %}" class="btn btn-outline-light me-2">Войти</a>
+        <a href="{% url 'register' %}" class="btn btn-light">Регистрация</a>
+    </div>
+{% endif %} 

@@ -11,7 +11,7 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8">
-        <div class="card">
+        <div class="card bg-dark text-light">
             <div class="card-body">
                 <h2 class="card-title mb-4">
                     {% if object %}
@@ -21,29 +21,58 @@
                     {% endif %}
                 </h2>
 
+                {# Форма для выбора товара и автоматического поиска #}
                 {% if not object %}
-                    <div class="mb-4">
-                        <h5>Автоматический поиск предложений</h5>
-                        <form id="searchForm" class="mb-3">
+                    <div class="mb-4 p-3 border rounded border-secondary">
+                        <h5 class="mb-3">Автоматический поиск предложений</h5>
+                        <form id="searchFormArea" class="mb-3">
                             {% csrf_token %}
-                            <div class="row g-3 align-items-end">
-                                <div class="col-md-8">
-                                    <label for="market_select" class="form-label">Выберите маркет для поиска</label>
-                                    <select id="market_select" class="form-select" required>
-                                        <option value="">-- Выберите маркет --</option>
-                                        {% for market in markets %}
-                                            <option value="{{ market.id }}">{{ market.name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <button type="submit" class="btn btn-primary w-100">
-                                        Найти предложения
-                                    </button>
-                                </div>
+                             <div class="mb-3">
+                                {# Поле выбора товара из основной формы #}
+                                {% for field in form %}
+                                    {% if field.name == 'product' %}
+                                        <div class="mb-3">
+                                            <label for="{{ field.id_for_label }}" class="form-label">
+                                                {{ field.label }}
+                                                {% if field.field.required %}
+                                                    <span class="text-danger">*</span>
+                                                {% endif %}
+                                            </label>
+                                            {{ field }}
+                                            {% if field.help_text %}
+                                                <div class="form-text text-muted">
+                                                    {{ field.help_text }}
+                                                </div>
+                                            {% endif %}
+                                            {% if field.errors %}
+                                                <div class="alert alert-danger mt-2">
+                                                    {{ field.errors }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                             <div class="mb-3">
+                                <label for="product_name_search" class="form-label">Название товара для поиска</label>
+                                <input type="text" class="form-control" id="product_name_search" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label d-block">Выберите маркет(ы) для поиска</label>
+                                {% for market in markets %}
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input market-checkbox" type="checkbox" id="market_{{ market.id }}" value="{{ market.id }}">
+                                        <label class="form-check-label" for="market_{{ market.id }}">{{ market.name }}</label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary" id="searchOffersBtn">
+                                    <i class="fas fa-search me-2"></i>Найти предложения
+                                </button>
                             </div>
                         </form>
-                        <div id="searchResults"></div>
+                        <div id="searchResults" class="mt-3"></div>
                     </div>
 
                     <div class="mb-4">
@@ -51,60 +80,66 @@
                     </div>
                 {% endif %}
 
-                <form method="post" id="offerForm">
+                {# Форма для ручного добавления предложения #}
+                <form method="post" id="manualOfferForm">
                     {% csrf_token %}
-                    
-                    {% for field in form %}
+
+                    {# Скрытое поле для product при редактировании #}
+                     {% if object %}
+                        <input type="hidden" name="product" value="{{ object.product.pk }}">
                         <div class="mb-3">
-                            <label for="{{ field.id_for_label }}" class="form-label">
-                                {{ field.label }}
-                                {% if field.field.required %}
-                                    <span class="text-danger">*</span>
-                                {% endif %}
-                            </label>
-                            
-                            {% if field.name == 'product' and field.value %}
-                                <input type="hidden" name="product" value="{{ field.value }}">
-                                <p class="form-control-static">{{ field.value }}</p>
-                            {% else %}
-                                {{ field }}
-                            {% endif %}
-                            
-                            {% if field.help_text %}
-                                <div class="form-text text-muted">
-                                    {{ field.help_text }}
-                                </div>
-                            {% endif %}
-                            
-                            {% if field.errors %}
-                                <div class="alert alert-danger mt-2">
-                                    {{ field.errors }}
-                                </div>
-                            {% endif %}
+                            <label class="form-label">Товар</label>
+                            <p class="form-control-static text-light">{{ object.product.name }}</p>
                         </div>
+                    {% endif %}
+
+                    {# Поля ручного добавления #}
+                    {% for field in form %}
+                        {% if field.name != 'product' %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">
+                                    {{ field.label }}
+                                    {% if field.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <div class="form-text text-muted">
+                                        {{ field.help_text }}
+                                    </div>
+                                {% endif %}
+                                {% if field.errors %}
+                                    <div class="alert alert-danger mt-2">
+                                        {{ field.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
                     {% endfor %}
 
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex justify-content-between align-items-center mt-4">
                         <a href="{% if object %}{% url 'product_detail' object.product.pk %}{% else %}{% url 'home' %}{% endif %}" 
                            class="btn btn-secondary">
-                            Отмена
+                            <i class="fas fa-times me-2"></i>Отмена
                         </a>
                         <div class="btn-group">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-success">
                                 {% if object %}
-                                    Сохранить изменения
+                                    <i class="fas fa-save me-2"></i>Сохранить изменения
                                 {% else %}
-                                    Добавить предложение
+                                    <i class="fas fa-plus-circle me-2"></i>Добавить предложение
                                 {% endif %}
                             </button>
                             {% if not object %}
-                                <button type="submit" name="add_another" value="1" class="btn btn-outline-primary">
-                                    Добавить и создать ещё
+                                <button type="submit" name="add_another" value="1" class="btn btn-outline-success">
+                                    <i class="fas fa-plus me-2"></i>Добавить и создать ещё
                                 </button>
                             {% endif %}
                         </div>
                     </div>
                 </form>
+
             </div>
         </div>
     </div>
@@ -112,57 +147,63 @@
 
 {% block extra_js %}
 <script>
+alert('JS подключён!');
+
+// Список маркетов (id и имя) из шаблона
+const MARKETS = [
+    {% for market in markets %}
+        {id: '{{ market.id }}', name: '{{ market.name }}'},
+    {% endfor %}
+];
+
 document.addEventListener('DOMContentLoaded', function() {
-    const searchForm = document.getElementById('searchForm');
     const searchResults = document.getElementById('searchResults');
-    const productId = document.querySelector('input[name="product"]').value;
+    const createOfferUrlTemplate = '{{ create_offer_url_template }}';
+    const searchFormArea = document.getElementById('searchFormArea');
+    const productSelect = document.getElementById('id_product');
+    const marketCheckboxes = document.querySelectorAll('.market-checkbox');
 
-    if (searchForm) {
-        searchForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const marketId = document.getElementById('market_select').value;
-            if (!marketId) {
-                alert('Пожалуйста, выберите маркет');
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('market_id', marketId);
-
-            fetch(`/search-market-offers/${productId}/`, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-                searchResults.innerHTML = data.html;
-                initAddOfferButtons();
-            })
-            .catch(error => {
-                searchResults.innerHTML = `
-                    <div class="alert alert-danger mt-3">
-                        Ошибка при поиске: ${error.message}
+    function renderOfferCards(offers) {
+        let resultsHtml = '';
+        offers.forEach(offer => {
+            resultsHtml += `
+                <div class="list-group-item list-group-item-action bg-dark text-light border-secondary d-flex flex-column flex-md-row justify-content-between align-items-md-center align-items-start">
+                    <div class="flex-grow-1 me-3">
+                        <h7 class="mb-1">${offer.title}</h7>
+                        <p class="mb-1 small text-muted">Ссылка: <a href="${offer.url}" target="_blank" class="text-info">${offer.url}</a></p>
+                        <div class="price-info mt-auto">
+                            <span class="text-success">${offer.current_price}</span>
+                        </div>
                     </div>
-                `;
-            });
+                    <button class="btn btn-sm btn-success add-offer-btn align-self-end align-self-md-center mt-2 mt-md-0"
+                        data-market-id="${offer.market_id}"
+                        data-price="${offer.current_price}"
+                        data-url="${offer.url}"
+                        data-title="${offer.title}">
+                        <i class="fas fa-plus me-1"></i> Добавить
+                    </button>
+                </div>
+            `;
         });
+        searchResults.innerHTML = resultsHtml;
+        initAddOfferButtons(productSelect ? productSelect.value : 1);
     }
 
-    function initAddOfferButtons() {
+    function initAddOfferButtons(productId) {
         document.querySelectorAll('.add-offer-btn').forEach(button => {
             button.addEventListener('click', function() {
+                const marketId = this.getAttribute('data-market-id');
+                const price = this.getAttribute('data-price');
+                const url = this.getAttribute('data-url');
+                const offerTitle = this.getAttribute('data-title');
                 const formData = new FormData();
-                formData.append('market_id', this.dataset.market);
-                formData.append('price', this.dataset.price);
-                formData.append('url', this.dataset.url);
-
-                fetch(`/create-offer-from-search/${productId}/`, {
+                formData.append('market_id', marketId);
+                formData.append('price', price);
+                formData.append('url', url);
+                formData.append('product_id', productId);
+                formData.append('title', offerTitle);
+                const createOfferUrl = createOfferUrlTemplate.replace('/0/', '/' + productId + '/');
+                fetch(createOfferUrl, {
                     method: 'POST',
                     body: formData,
                     headers: {
@@ -182,7 +223,43 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .catch(error => {
                     alert(`Ошибка при добавлении предложения: ${error.message}`);
+                    console.error('Add Offer Error:', error);
                 });
+            });
+        });
+    }
+
+    if (searchFormArea) {
+        searchFormArea.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const productId = productSelect ? productSelect.value : 1;
+            const selectedMarkets = Array.from(marketCheckboxes)
+                .filter(checkbox => checkbox.checked)
+                .map(checkbox => checkbox.value);
+            if (selectedMarkets.length === 0) {
+                alert('Пожалуйста, выберите хотя бы один маркет');
+                return;
+            }
+            // AJAX-запрос к Django view
+            const params = new URLSearchParams();
+            params.append('product_id', productId);
+            selectedMarkets.forEach(id => params.append('market_ids[]', id));
+            fetch('/search_market_offers/?' + params.toString(), {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.results && data.results.length > 0) {
+                    renderOfferCards(data.results);
+                } else {
+                    searchResults.innerHTML = '<div class="alert alert-info mt-3">Нет предложений для выбранных маркетов.</div>';
+                }
+            })
+            .catch(error => {
+                searchResults.innerHTML = `<div class="alert alert-danger mt-3">Ошибка при поиске: ${error.message}</div>`;
             });
         });
     }

@@ -1,27 +1,49 @@
 @startuml
+' Сбалансированная диаграмма: не слишком высокая и не слишком широкая
+
+top to bottom direction
+skinparam linetype ortho
+skinparam nodesep 120
+skinparam ranksep 30
+skinparam padding 8
+skinparam roundcorner 20
+
 actor User as user
 actor Manager as manager
 actor Admin as admin
 actor Market as market
 
 rectangle "Digital Marketplace System" {
-    [User Registration]
-    [Login]
-    [Password Reset]
-    [Product Catalog]
-    [Product Search]
-    [Price Comparison]
-    [Market API]
-    [Price Aggregation]
-    [Product Synchronization]
-    [Shopping Cart]
-    [Order Processing]
-    [Purchase History]
-    [User Management]
-    [Market Management]
-    [System Configuration]
+    ' Первый ряд пакетов
+    package "Auth" {
+        [User Registration]
+        [Login]
+        [Password Reset]
+    }
+    package "Products" {
+        [Product Catalog]
+        [Product Search]
+        [Price Comparison]
+    }
+    package "Shopping" {
+        [Shopping Cart]
+        [Order Processing]
+        [Purchase History]
+    }
+    ' Второй ряд пакетов
+    package "Market Integration" {
+        [Market API]
+        [Price Aggregation]
+        [Product Synchronization]
+    }
+    package "Management" {
+        [User Management]
+        [Market Management]
+        [System Configuration]
+    }
 }
 
+' Связи пользователя
 user --> [User Registration]
 user --> [Login]
 user --> [Product Catalog]
@@ -31,22 +53,25 @@ user --> [Shopping Cart]
 user --> [Order Processing]
 user --> [Purchase History]
 
+' Связи менеджера
 manager --> [Product Management]
 manager --> [Market Integration]
 manager --> [Shopping]
 
+' Связи администратора
 admin --> [Admin Panel]
 admin --> [User Management]
 admin --> [Market Management]
 admin --> [System Configuration]
 
+' Связи магазина
 market --> [Market API]
 market --> [Price Aggregation]
 
+' Включения и расширения
 [Product Search] ..> [Price Comparison] : <<include>>
 [Order Processing] ..> [Purchase History] : <<include>>
 [Market API] ..> [Price Aggregation] : <<include>>
-
 [Product Catalog] ..> [Product Search] : <<extend>>
 [Market Integration] ..> [Product Synchronization] : <<extend>>
 [Admin Panel] ..> [System Configuration] : <<extend>>

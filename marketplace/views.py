@@ -1,10 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.db.models import Q
-from .models import Product, Offer, Cart, Receipt, Market, User
+from .models import Product, Offer, Cart, Receipt, Market, User, FakeOffer
 from django.contrib import messages
 from .forms import UserRegistrationForm, ProductForm, OfferForm
 from django.contrib.auth.views import LoginView
@@ -13,6 +13,27 @@ from .forms import CustomAuthenticationForm
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.template.loader import render_to_string
+import scrapy
+import json
+import subprocess
+import sys
+import os
+from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.template import RequestContext
+
+from scrapy.crawler import CrawlerProcess
+from scrapy.utils.project import get_project_settings
+from twisted.internet import reactor
+from django.db.models import ObjectDoesNotExist # Импортируем для более общего исключения
+from django.db import transaction # Импортируем transaction для атомарности
+
+# Assume this mapping exists or can be derived from Market model
+MARKET_SPIDER_MAP = {
+    '1': 'steam', # Assuming Market ID 1 is Steam
+    # Add other markets and their spider names here
+}
 
 class HomeView(ListView):
     model = Product
@@ -61,7 +82,10 @@ class ProductDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['offers'] = self.object.offers.all().order_by('price')
+        offers = self.object.offers.all().order_by('price')
+        for offer in offers:
+            offer.is_fake = hasattr(offer, 'fakeoffer_ptr') or offer.__class__.__name__ == 'FakeOffer'
+        context['offers'] = offers
         return context
 
 @login_required
@@ -69,6 +93,9 @@ def add_to_cart(request, offer_id):
     if request.user.role == 'manager':
         return redirect('home')
     offer = get_object_or_404(Offer, id=offer_id)
+    if request.method != 'POST':
+        return redirect('product_detail', pk=offer.product.id)
+    
     cart_item, created = Cart.objects.get_or_create(
         user=request.user,
         offer=offer
@@ -84,6 +111,8 @@ def add_platform_to_cart(request, product_id):
     if request.user.role == 'manager':
         return redirect('home')
     product = get_object_or_404(Product, id=product_id)
+    if request.method != 'POST':
+        return redirect('product_detail', pk=product.id)
     
     # Создаем или получаем предложение от платформы
     platform_market, _ = Market.objects.get_or_create(
@@ -242,20 +271,65 @@ class OfferCreateView(ManagerRequiredMixin, CreateView):
         initial = super().get_initial()
         product_id = self.kwargs.get('product')
         if product_id:
-            initial['product'] = get_object_or_404(Product, pk=product_id)
+            product = get_object_or_404(Product, pk=product_id)
+            initial['product'] = product
         return initial
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        # Если в initial есть product, значит, мы добавляем предложение к существующему товару
+        if form.initial.get('product'):
+            # Делаем поля ручного добавления необязательными
+            if 'market' in form.fields:
+                form.fields['market'].required = False
+            if 'price' in form.fields:
+                form.fields['price'].required = False
+            if 'url' in form.fields:
+                form.fields['url'].required = False
+        return form
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        form = context['form']
+        
+        # Если в initial есть product, значит, мы добавляем предложение к существующему товару
+        if form.initial.get('product'):
+            # Делаем поля ручного добавления необязательными
+            if 'market' in form.fields:
+                form.fields['market'].required = False
+            if 'price' in form.fields:
+                form.fields['price'].required = False
+            if 'url' in form.fields:
+                form.fields['url'].required = False
+                
+        context['form'] = form # Передаем измененную форму обратно в контекст
         context['markets'] = Market.objects.all()
+        context['create_offer_url_template'] = reverse('create_offer_from_search', kwargs={'product_id': 0}) # Используем 0 как placeholder
         return context
 
     def form_valid(self, form):
-        response = super().form_valid(form)
-        messages.success(self.request, 'Предложение успешно добавлено')
-        if 'add_another' in self.request.POST:
-            return redirect('offer_create', product=form.instance.product.pk)
-        return redirect('product_detail', pk=form.instance.product.pk)
+        # Проверяем, заполнены ли поля ручного добавления
+        market = form.cleaned_data.get('market')
+        price = form.cleaned_data.get('price')
+        url = form.cleaned_data.get('url')
+
+        if market and price and url:
+            # Если поля ручного добавления заполнены, сохраняем форму
+            response = super().form_valid(form)
+            messages.success(self.request, 'Предложение успешно добавлено вручную')
+            if 'add_another' in self.request.POST:
+                return redirect('offer_create', product=form.instance.product.pk)
+            return redirect('product_detail', pk=form.instance.product.pk)
+        else:
+            # Если поля ручного добавления не заполнены, но товар выбран,
+            # предполагаем, что пользователь использует автоматический поиск.
+            # В этом случае, основная форма не должна сохраняться.
+            messages.info(self.request, 'Поля ручного добавления не заполнены. Используйте автоматический поиск или заполните все поля вручную.')
+            # Перенаправляем обратно на ту же страницу, чтобы пользователь мог использовать поиск
+            product_id = self.kwargs.get('product')
+            if product_id:
+                return redirect('offer_create', product=product_id)
+            return redirect('offer_create') # Перенаправляем на общую страницу добавления, если product_id не был в URL
 
 class OfferUpdateView(ManagerRequiredMixin, UpdateView):
     model = Offer
@@ -267,8 +341,10 @@ def register(request):
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Аккаунт успешно создан! Теперь вы можете войти.')
+            user = form.save(commit=False)
+            user.role = 'customer' # Default role is customer
+            user.save()
+            messages.success(request, 'Вы успешно зарегистрированы!')
             return redirect('login')
     else:
         form = UserRegistrationForm()
@@ -283,69 +359,164 @@ class CustomLoginView(LoginView):
             return reverse('admin:index')
         return reverse('home')
 
-@login_required
-@require_POST
-def search_market_offers(request, product_id):
-    if request.user.role != 'manager':
-        return JsonResponse({'error': 'Доступ запрещен'}, status=403)
-    
-    product = get_object_or_404(Product, pk=product_id)
-    market_id = request.POST.get('market_id')
-    
-    if not market_id:
-        return JsonResponse({'error': 'Не указан маркет'}, status=400)
-    
-    market = get_object_or_404(Market, pk=market_id)
-    results = market.search_products(product.name)
-    
-    html = render_to_string('marketplace/includes/search_results.html', {
-        'results': results,
-        'product': product,
-        'market': market
-    })
-    
-    return JsonResponse({
-        'html': html,
-        'count': len(results)
-    })
+@csrf_exempt
+def search_market_offers(request):
+    import sys
+    def all_fake_offers_debug():
+        return [
+            {
+                'id': f.id,
+                'product_id': f.product.id,
+                'product_name': f.product.name,
+                'market_id': f.market.id,
+                'market_name': f.market.name,
+                'title': f.title,
+                'url': f.url
+            }
+            for f in FakeOffer.objects.all()
+        ]
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            product_id = data.get('product_id')
+            market_ids = data.get('market_ids', [])
+            print(f"[DEBUG] POST product_id={product_id}, market_ids={market_ids}", file=sys.stderr)
+            if not product_id or not market_ids:
+                return JsonResponse({'results': [], 'product_id': product_id, 'debug': 'no product_id or market_ids', 'all_fake_offers': all_fake_offers_debug()})
+            fake_offers = FakeOffer.objects.filter(product_id=product_id, market_id__in=market_ids)
+            debug_ids = list(fake_offers.values_list('id', flat=True))
+            print(f"[DEBUG] Найдено FakeOffer: {len(debug_ids)} ids={debug_ids}", file=sys.stderr)
+            results = []
+            for offer in fake_offers:
+                results.append({
+                    'market_id': str(offer.market.id),
+                    'title': offer.title or f'Предложение ({offer.market.name})',
+                    'url': offer.url,
+                    'current_price': f'{offer.price} руб.',
+                    'original_price': '',
+                    'product_id': offer.product.id
+                })
+            return JsonResponse({'results': results, 'product_id': product_id, 'debug': {'market_ids': market_ids, 'found_ids': debug_ids}, 'all_fake_offers': all_fake_offers_debug()})
+        except Exception as e:
+            return JsonResponse({'error': f'Ошибка: {str(e)}'}, status=500)
+    elif request.method == 'GET':
+        product_id = request.GET.get('product_id')
+        market_ids = request.GET.getlist('market_ids[]') or request.GET.getlist('market_ids')
+        print(f"[DEBUG] GET product_id={product_id}, market_ids={market_ids}", file=sys.stderr)
+        if not product_id or not market_ids:
+            return JsonResponse({'results': [], 'product_id': product_id, 'debug': 'no product_id or market_ids', 'all_fake_offers': all_fake_offers_debug()})
+        fake_offers = FakeOffer.objects.filter(product_id=product_id, market_id__in=market_ids)
+        debug_ids = list(fake_offers.values_list('id', flat=True))
+        print(f"[DEBUG] Найдено FakeOffer: {len(debug_ids)} ids={debug_ids}", file=sys.stderr)
+        results = []
+        for offer in fake_offers:
+            results.append({
+                'market_id': str(offer.market.id),
+                'title': offer.title or f'Предложение ({offer.market.name})',
+                'url': offer.url,
+                'current_price': f'{offer.price} руб.',
+                'original_price': '',
+                'product_id': offer.product.id
+            })
+        return JsonResponse({'results': results, 'product_id': product_id, 'debug': {'market_ids': market_ids, 'found_ids': debug_ids}, 'all_fake_offers': all_fake_offers_debug()})
+    else:
+        return JsonResponse({'error': 'Разрешен только метод POST или GET'}, status=405)
 
 @login_required
 @require_POST
 def create_offer_from_search(request, product_id):
     if request.user.role != 'manager':
-        return JsonResponse({'error': 'Доступ запрещен'}, status=403)
-    
-    product = get_object_or_404(Product, pk=product_id)
-    market_id = request.POST.get('market_id')
-    price = request.POST.get('price')
-    url = request.POST.get('url')
-    
-    if not all([market_id, price, url]):
-        return JsonResponse({'error': 'Не все данные предоставлены'}, status=400)
-    
-    market = get_object_or_404(Market, pk=market_id)
-    
+        return JsonResponse({'error': 'Доступ запрещен.'}, status=403)
+
+    # Теперь create_offer_from_search ожидает только реальный product_id
     try:
-        offer = Offer.objects.create(
-            product=product,
-            market=market,
-            price=price,
-            url=url
-        )
-        return JsonResponse({
-            'success': True,
-            'message': 'Предложение успешно создано',
-            'offer_id': offer.id
-        })
+        with transaction.atomic():
+            # Получаем существующий товар по product_id из URL
+            product = get_object_or_404(Product, pk=product_id)
+            print(f"Используем существующий товар: \"{product.name}\" (ID: {product.id})")
+
+            market_id = request.POST.get('market_id')
+            price_str = request.POST.get('price')
+            url = request.POST.get('url')
+            offer_title = request.POST.get('title')
+
+            if not market_id or not price_str or not url:
+                return JsonResponse({
+                    'error': f'Неполные данные для создания предложения. market_id={market_id}, price={price_str}, url={url}, title={offer_title}'
+                }, status=400)
+
+            market = get_object_or_404(Market, pk=market_id)
+
+            try:
+                price_str_cleaned = price_str.replace(' руб.', '').replace(' ', '').replace(',', '.')
+                price = float(price_str_cleaned)
+            except ValueError:
+                 return JsonResponse({'error': 'Неверный формат цены.'}, status=400)
+
+            final_offer_title = offer_title if offer_title else f'Предложение для {product.name}'
+
+            offer, created = Offer.objects.get_or_create(
+                product=product,
+                market=market,
+                url=url,
+                defaults={'price': price, 'title': final_offer_title}
+            )
+
+            if not created:
+                updated = False
+                if offer.price != price:
+                    offer.price = price
+                    updated = True
+                if hasattr(offer, 'title') and offer.title != final_offer_title:
+                     offer.title = final_offer_title
+                     updated = True
+                if updated:
+                    offer.save()
+                    print(f"Предложение обновлено: ID {offer.id}")
+                else:
+                    print(f"Предложение уже существует и не требует обновления: ID {offer.id}")
+            else:
+                print(f"Создано новое предложение: ID {offer.id}")
+
+            return JsonResponse({'success': 'Предложение успешно создано/обновлено.', 'offer_id': offer.id})
+
+    except Product.DoesNotExist:
+        # Если товар не найден по переданному ID в URL
+        return JsonResponse({'error': 'Товар не найден по указанному ID.'}, status=404)
+    except Market.DoesNotExist:
+        return JsonResponse({'error': 'Маркет не найден.'}, status=404)
     except Exception as e:
-        return JsonResponse({
-            'error': str(e)
-        }, status=400)
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}, status=500)
 
 @login_required
 def remove_from_cart(request, item_id):
-    if request.method == 'POST':
-        cart_item = get_object_or_404(Cart, id=item_id, user=request.user)
-        cart_item.delete()
-        messages.success(request, 'Товар успешно удален из корзины.')
+    if request.user.role == 'manager':
+        return redirect('home')
+    cart_item = get_object_or_404(Cart, id=item_id, user=request.user)
+    cart_item.delete()
+    messages.success(request, 'Товар удален из корзины')
     return redirect('cart')
+
+@login_required
+def delete_fake_offer(request, pk):
+    offer = get_object_or_404(FakeOffer, pk=pk)
+    product_id = offer.product.id
+    if request.method == 'POST':
+        offer.delete()
+        messages.success(request, 'Предложение удалено.')
+        return redirect('product_detail', pk=product_id)
+    return render(request, 'marketplace/confirm_delete_fake_offer.html', {'offer': offer})
+
+def get_cart_count(request):
+    if request.user.is_authenticated and hasattr(request.user, 'role') and request.user.role != 'manager':
+        from .models import Cart
+        return Cart.objects.filter(user=request.user).count()
+    return 0
+
+def cart_count_context(request):
+    from .models import Cart
+    if request.user.is_authenticated and hasattr(request.user, 'role') and request.user.role != 'manager':
+        return {'cart_count': Cart.objects.filter(user=request.user).count()}
+    return {'cart_count': 0}

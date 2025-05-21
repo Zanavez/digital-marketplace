@@ -26,11 +26,13 @@ urlpatterns = [
     path('offer/<int:pk>/edit/', views.OfferUpdateView.as_view(), name='offer_update'),
     
     # Автоматический поиск предложений
-    path('search-market-offers/<int:product_id>/', views.search_market_offers, name='search_market_offers'),
+    path('search_market_offers/', views.search_market_offers, name='search_market_offers'),
+    path('search-market-offers/', views.search_market_offers),
     path('create-offer-from-search/<int:product_id>/', views.create_offer_from_search, name='create_offer_from_search'),
     
     # Аутентификация
     path('login/', views.CustomLoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='home'), name='logout'),
     path('register/', views.register, name='register'),
+    path('fake-offer/<int:pk>/delete/', views.delete_fake_offer, name='delete_fake_offer'),
 ] 

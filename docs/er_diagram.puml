@@ -1,68 +1,99 @@
 @startuml
-' ER-диаграмма: связи от конкретных полей-ключей, минимизация пересечений
+' ER-диаграмма: компактная, стрелки прямые
 
-left to right direction
+top to bottom direction
+skinparam linetype polyline
 
 entity "User" as user {
     * id : int
-    * username : string
-    * email : string
-    * role : enum
-    * first_name : string
-    * last_name : string
-    * middle_name : string
-    * phone_number : string
-}
-
-entity "Market" as market {
-    * id : int
-    * name : string
-    * url : string
-    * api_key : string
-    * api_url : string
+    * username : varchar(150)
+    * password : varchar(128)
+    * email : varchar(254)
+    * role : varchar(10)
+    * first_name : varchar(150)
+    * last_name : varchar(150)
+    * middle_name : varchar(150)
+    * phone_number : varchar(15)
+    * is_active : bool
+    * is_staff : bool
+    * is_superuser : bool
+    * date_joined : datetime
+    * last_login : datetime
 }
 
 entity "Product" as product {
     * id : int
-    * name : string
+    * name : varchar(200)
     * description : text
     * image : file
     * platform_price : decimal
-    * popularity : integer
+    * popularity : int
+    * created_at : datetime
+    * updated_at : datetime
+}
+
+entity "Market" as market {
+    * id : int
+    * name : varchar(100)
+    * url : varchar(200)
+    * description : text
+    * api_key : varchar(255)
+    * api_url : varchar(200)
+    * search_url_template : varchar(255)
+    * spider_name : varchar(50)
+    * created_at : datetime
+    * updated_at : datetime
 }
 
 entity "Offer" as offer {
     * id : int
     * price : decimal
-    * url : string
+    * url : varchar(500)
+    * title : varchar(255)
     * market_id : int
     * product_id : int
+    * created_at : datetime
+    * updated_at : datetime
+}
+
+entity "FakeOffer" as fakeoffer {
+    * id : int
+    * price : decimal
+    * url : varchar(500)
+    * title : varchar(255)
+    * market_id : int
+    * product_id : int
+    * created_at : datetime
+    * updated_at : datetime
 }
 
 entity "Cart" as cart {
     * id : int
-    * quantity : integer
+    * quantity : int
     * user_id : int
     * offer_id : int
+    * created_at : datetime
+    * updated_at : datetime
 }
 
 entity "Receipt" as receipt {
     * id : int
-    * quantity : integer
+    * quantity : int
     * total_price : decimal
     * purchase_date : datetime
     * user_id : int
     * offer_id : int
+    * activation_code : varchar(32)
 }
 
-' Связи от конкретных полей-ключей
+' Стрелки от конкретных полей
 cart::user_id }o--|| user::id : "FK"
 cart::offer_id }o--|| offer::id : "FK"
-
 receipt::user_id }o--|| user::id : "FK"
 receipt::offer_id }o--|| offer::id : "FK"
-
 offer::product_id }o--|| product::id : "FK"
 offer::market_id }o--|| market::id : "FK"
+fakeoffer::product_id }o--|| product::id : "FK"
+fakeoffer::market_id }o--|| market::id : "FK"
 
 @enduml 

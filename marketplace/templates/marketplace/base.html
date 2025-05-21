@@ -360,6 +360,18 @@
             color: #e0ffe0;
             text-decoration: underline;
         }
+
+        .navbar .badge {
+            padding: 0.35em 0.6em;
+            font-size: 0.85em;
+            font-weight: 600;
+            border-radius: 50%;
+            background: var(--accent-color);
+            color: #fff;
+            box-shadow: 0 2px 6px rgba(46,204,113,0.2);
+            top: 0.2em;
+            left: 1.7em;
+        }
     </style>
 </head>
 <body>
@@ -372,7 +384,7 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
+                <ul class="navbar-nav me-auto gap-3">
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'product_list' %}">
                             <i class="fas fa-store me-1"></i>Товары
@@ -380,8 +392,13 @@
                     </li>
                     {% if user.is_authenticated and user.role != 'manager' %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'cart' %}">
+                            <a class="nav-link d-flex align-items-center" href="{% url 'cart' %}">
                                 <i class="fas fa-shopping-cart me-1"></i>Корзина
+                                {% if cart_count and cart_count > 0 %}
+                                    <span class="badge rounded-pill bg-success ms-2" style="font-size:0.85em; min-width:1.7em; height:1.7em; display:inline-flex; align-items:center; justify-content:center;">
+                                        {{ cart_count }}
+                                    </span>
+                                {% endif %}
                             </a>
                         </li>
                         <li class="nav-item">

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, Product, Offer, Market, Cart, Receipt
+from .models import User, Product, Offer, Market, Cart, Receipt, FakeOffer
 
 class CustomUserAdmin(UserAdmin):
     list_display = ('username', 'email', 'first_name', 'last_name', 'role', 'is_staff')
@@ -30,15 +30,16 @@ class OfferInline(admin.TabularInline):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'popularity', 'created_at', 'updated_at')
+    list_display = ('id', 'name', 'popularity', 'created_at', 'updated_at')
     search_fields = ('name', 'description')
     list_filter = ('created_at', 'updated_at')
     inlines = [OfferInline]
 
 @admin.register(Market)
 class MarketAdmin(admin.ModelAdmin):
-    list_display = ('name', 'url', 'created_at', 'updated_at')
-    search_fields = ('name', 'description')
+    list_display = ('id', 'name', 'url', 'description', 'created_at', 'updated_at')
+    search_fields = ('name', 'url', 'description')
+    list_filter = ('created_at', 'updated_at')
 
 @admin.register(Offer)
 class OfferAdmin(admin.ModelAdmin):
@@ -57,5 +58,11 @@ class ReceiptAdmin(admin.ModelAdmin):
     list_display = ('user', 'offer', 'quantity', 'total_price', 'purchase_date')
     list_filter = ('purchase_date',)
     search_fields = ('user__username', 'offer__product__name')
+
+@admin.register(FakeOffer)
+class FakeOfferAdmin(admin.ModelAdmin):
+    list_display = ('id', 'product', 'market', 'price', 'title', 'url', 'created_at', 'updated_at')
+    search_fields = ('product__name', 'market__name', 'title', 'url')
+    list_filter = ('market', 'created_at', 'updated_at')
 
 admin.site.register(User, CustomUserAdmin)

@@ -59,6 +59,13 @@
                 </table>
             </div>
 
+            {% if receipt.activation_code %}
+                <div class="alert alert-success mt-4">
+                    <strong>Ваш код активации:</strong>
+                    <span class="fs-4">{{ receipt.activation_code }}</span>
+                </div>
+            {% endif %}
+
             <div class="mt-4">
                 <h5>Дополнительная информация:</h5>
                 <p>Ссылка на товар: <a href="{{ receipt.offer.url }}" target="_blank" class="text-decoration-none">{{ receipt.offer.url }}</a></p>

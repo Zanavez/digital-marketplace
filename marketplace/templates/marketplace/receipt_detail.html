@@ -4,8 +4,8 @@
 
 {% block content %}
 <div class="container py-4">
-    <div class="card bg-dark text-light">
-        <div class="card-header bg-darker">
+    <div class="card">
+        <div class="card-header">
             <div class="d-flex justify-content-between align-items-center">
                 <h2 class="mb-0">Чек #{{ receipt.id }}</h2>
                 <small class="text-muted">{{ receipt.purchase_date|date:"d.m.Y H:i" }}</small>
@@ -27,7 +27,7 @@
             </div>
 
             <div class="table-responsive">
-                <table class="table table-dark">
+                <table class="table">
                     <thead>
                         <tr>
                             <th>Товар</th>
@@ -71,7 +71,7 @@
                 <p>Ссылка на товар: <a href="{{ receipt.offer.url }}" target="_blank" class="text-decoration-none">{{ receipt.offer.url }}</a></p>
             </div>
         </div>
-        <div class="card-footer bg-darker">
+        <div class="card-footer">
             <div class="d-flex justify-content-between align-items-center">
                 <a href="{% url 'purchase_history' %}" class="btn btn-outline-light">
                     <i class="fas fa-arrow-left me-2"></i>Вернуться к истории покупок

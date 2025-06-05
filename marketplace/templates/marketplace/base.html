@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,7 +10,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Custom CSS -->
     <style>
-        :root {
+        :root[data-theme="dark"] {
             --dark-bg: #1a1a1a;
             --darker-bg: #141414;
             --accent-color: #2ecc71;
@@ -19,6 +19,17 @@
             --text-muted: #888;
             --text-light: #e0e0e0;
             --text-lighter: #ffffff;
+        }
+
+        :root[data-theme="light"] {
+            --dark-bg: #f8f9fa;
+            --darker-bg: #e9ecef;
+            --accent-color: #2ecc71;
+            --accent-hover: #27ae60;
+            --card-bg: #ffffff;
+            --text-muted: #6c757d;
+            --text-light: #212529;
+            --text-lighter: #000000;
         }
 
         body {
@@ -51,6 +62,9 @@
             color: #fff !important;
             transition: color 0.3s ease;
         }
+        [data-theme="light"] .nav-link {
+            color: #212529 !important;
+        }
 
         .nav-link:after {
             content: '';
@@ -73,6 +87,10 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             color: var(--text-light);
+        }
+        [data-theme="light"] .card {
+            background-color: #fff;
+            color: #212529;
         }
 
         .card:hover {
@@ -108,6 +126,25 @@
             border-color: var(--accent-color);
         }
 
+        .btn-outline-light {
+            color: #fff;
+            border-color: #fff;
+        }
+        .btn-outline-light:hover {
+            background-color: #fff;
+            color: var(--accent-color);
+            border-color: #fff;
+        }
+        [data-theme="light"] .btn-outline-light {
+            color: #212529;
+            border-color: #212529;
+        }
+        [data-theme="light"] .btn-outline-light:hover {
+            background-color: #212529;
+            color: #fff;
+            border-color: #212529;
+        }
+
         .table {
             background-color: var(--card-bg);
             border-radius: 10px;
@@ -131,12 +168,16 @@
             border: 1px solid rgba(255,255,255,0.1);
             color: var(--text-lighter);
         }
-
-        .form-control:focus {
-            background-color: var(--darker-bg);
+        [data-theme="light"] .form-control {
+            background-color: #fff;
+            color: #212529;
+            border: 1px solid #ced4da;
+        }
+        [data-theme="light"] .form-control:focus {
+            background-color: #fff;
+            color: #212529;
             border-color: var(--accent-color);
-            color: var(--text-lighter);
-            box-shadow: 0 0 0 0.25rem rgba(46, 204, 113, 0.25);
+            box-shadow: 0 0 0 0.25rem rgba(46, 204, 113, 0.15);
         }
 
         .form-control::placeholder {
@@ -152,6 +193,9 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             position: relative;
             animation: slideInDown 0.3s ease-out;
+        }
+        [data-theme="light"] .alert {
+            color: #212529;
         }
 
         @keyframes slideInDown {
@@ -185,7 +229,11 @@
             border: 1px solid rgba(40, 167, 69, 0.3);
             color: #eaffea;
         }
-
+        [data-theme="light"] .alert-success {
+            background-color: #eaffea;
+            color: #218838;
+            border: 1px solid #b2f2bb;
+        }
         .alert-success::before {
             content: '\f058';
             font-family: 'Font Awesome 5 Free';
@@ -199,7 +247,11 @@
             border: 1px solid rgba(23, 162, 184, 0.3);
             color: #eaffff;
         }
-
+        [data-theme="light"] .alert-info {
+            background-color: #e9f7fd;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
         .alert-info::before {
             content: '\f05a';
             font-family: 'Font Awesome 5 Free';
@@ -213,7 +265,11 @@
             border: 1px solid rgba(255, 193, 7, 0.3);
             color: #fffbe5;
         }
-
+        [data-theme="light"] .alert-warning {
+            background-color: #fffbe5;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
         .alert-warning::before {
             content: '\f071';
             font-family: 'Font Awesome 5 Free';
@@ -227,7 +283,11 @@
             border: 1px solid rgba(220, 53, 69, 0.3);
             color: #fff0f0;
         }
-
+        [data-theme="light"] .alert-danger {
+            background-color: #fff0f0;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
         .alert-danger::before {
             content: '\f06a';
             font-family: 'Font Awesome 5 Free';
@@ -372,6 +432,19 @@
             top: 0.2em;
             left: 1.7em;
         }
+
+        .text-light {
+            color: var(--text-light) !important;
+        }
+        .text-lighter {
+            color: var(--text-lighter) !important;
+        }
+        [data-theme="light"] .text-light {
+            color: #212529 !important;
+        }
+        [data-theme="light"] .text-lighter {
+            color: #000 !important;
+        }
     </style>
 </head>
 <body>
@@ -416,6 +489,9 @@
                     {% endif %}
                 </ul>
                 <div class="d-flex align-items-center">
+                    <button id="theme-toggle" class="btn btn-outline-primary btn-sm me-2" title="Переключить тему">
+                        <i class="fas fa-sun"></i>
+                    </button>
                     {% if user.is_authenticated %}
                         <span class="text-light me-3">
                             <i class="fas fa-user me-1"></i>{{ user.username }}
@@ -455,6 +531,32 @@
 
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Theme Toggle Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('theme-toggle');
+            const html = document.documentElement;
+            const icon = themeToggle.querySelector('i');
+            
+            // Проверяем сохраненную тему
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            html.setAttribute('data-theme', savedTheme);
+            updateIcon(savedTheme);
+            
+            themeToggle.addEventListener('click', function() {
+                const currentTheme = html.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                
+                html.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                updateIcon(newTheme);
+            });
+            
+            function updateIcon(theme) {
+                icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            }
+        });
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html> 

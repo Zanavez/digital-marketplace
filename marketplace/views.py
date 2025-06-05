@@ -303,7 +303,7 @@ class OfferCreateView(ManagerRequiredMixin, CreateView):
                 form.fields['url'].required = False
                 
         context['form'] = form # Передаем измененную форму обратно в контекст
-        context['markets'] = Market.objects.all()
+        context['markets'] = list(Market.objects.values('id', 'name'))
         context['create_offer_url_template'] = reverse('create_offer_from_search', kwargs={'product_id': 0}) # Используем 0 как placeholder
         return context
 
@@ -336,6 +336,13 @@ class OfferUpdateView(ManagerRequiredMixin, UpdateView):
     template_name = 'marketplace/offer_form.html'
     fields = ['price', 'url']
     success_url = reverse_lazy('product_list')
+
+class OfferDeleteView(ManagerRequiredMixin, DeleteView):
+    model = Offer
+    template_name = 'marketplace/offer_confirm_delete.html'
+    
+    def get_success_url(self):
+        return reverse('product_detail', kwargs={'pk': self.object.product.pk})
 
 def register(request):
     if request.method == 'POST':
@@ -378,16 +385,18 @@ def search_market_offers(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
+            print(f"[DEBUG] Raw data received: {data}", file=sys.stderr)
             product_id = data.get('product_id')
-            market_ids = data.get('market_ids', [])
+            market_ids = data.get('markets', [])
+            print(f"[DEBUG] Retrieved market_ids: {market_ids}, Type: {type(market_ids)}", file=sys.stderr)
             print(f"[DEBUG] POST product_id={product_id}, market_ids={market_ids}", file=sys.stderr)
             if not product_id or not market_ids:
                 return JsonResponse({'results': [], 'product_id': product_id, 'debug': 'no product_id or market_ids', 'all_fake_offers': all_fake_offers_debug()})
-            fake_offers = FakeOffer.objects.filter(product_id=product_id, market_id__in=market_ids)
-            debug_ids = list(fake_offers.values_list('id', flat=True))
-            print(f"[DEBUG] Найдено FakeOffer: {len(debug_ids)} ids={debug_ids}", file=sys.stderr)
+            offers = Offer.objects.filter(product_id=product_id, market_id__in=[int(mid) for mid in market_ids])
+            debug_ids = list(offers.values_list('id', flat=True))
+            print(f"[DEBUG] Найдено Offer: {len(debug_ids)} ids={debug_ids}", file=sys.stderr)
             results = []
-            for offer in fake_offers:
+            for offer in offers:
                 results.append({
                     'market_id': str(offer.market.id),
                     'title': offer.title or f'Предложение ({offer.market.name})',
@@ -401,15 +410,16 @@ def search_market_offers(request):
             return JsonResponse({'error': f'Ошибка: {str(e)}'}, status=500)
     elif request.method == 'GET':
         product_id = request.GET.get('product_id')
-        market_ids = request.GET.getlist('market_ids[]') or request.GET.getlist('market_ids')
+        market_ids = request.GET.getlist('markets[]') or request.GET.getlist('markets')
+        print(f"[DEBUG] Retrieved market_ids: {market_ids}, Type: {type(market_ids)}", file=sys.stderr)
         print(f"[DEBUG] GET product_id={product_id}, market_ids={market_ids}", file=sys.stderr)
         if not product_id or not market_ids:
             return JsonResponse({'results': [], 'product_id': product_id, 'debug': 'no product_id or market_ids', 'all_fake_offers': all_fake_offers_debug()})
-        fake_offers = FakeOffer.objects.filter(product_id=product_id, market_id__in=market_ids)
-        debug_ids = list(fake_offers.values_list('id', flat=True))
-        print(f"[DEBUG] Найдено FakeOffer: {len(debug_ids)} ids={debug_ids}", file=sys.stderr)
+        offers = Offer.objects.filter(product_id=product_id, market_id__in=[int(mid) for mid in market_ids])
+        debug_ids = list(offers.values_list('id', flat=True))
+        print(f"[DEBUG] Найдено Offer: {len(debug_ids)} ids={debug_ids}", file=sys.stderr)
         results = []
-        for offer in fake_offers:
+        for offer in offers:
             results.append({
                 'market_id': str(offer.market.id),
                 'title': offer.title or f'Предложение ({offer.market.name})',

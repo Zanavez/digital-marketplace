@@ -11,7 +11,7 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8">
-        <div class="card bg-dark text-light">
+        <div class="card">
             <div class="card-body">
                 <h2 class="card-title mb-4">
                     {% if object %}
@@ -23,7 +23,7 @@
 
                 {# Форма для выбора товара и автоматического поиска #}
                 {% if not object %}
-                    <div class="mb-4 p-3 border rounded border-secondary">
+                    <div class="mb-4 p-3 border rounded">
                         <h5 class="mb-3">Автоматический поиск предложений</h5>
                         <form id="searchFormArea" class="mb-3">
                             {% csrf_token %}
@@ -89,7 +89,7 @@
                         <input type="hidden" name="product" value="{{ object.product.pk }}">
                         <div class="mb-3">
                             <label class="form-label">Товар</label>
-                            <p class="form-control-static text-light">{{ object.product.name }}</p>
+                            <p class="form-control-static">{{ object.product.name }}</p>
                         </div>
                     {% endif %}
 
@@ -147,32 +147,29 @@
 
 {% block extra_js %}
 <script>
-alert('JS подключён!');
-
-// Список маркетов (id и имя) из шаблона
-const MARKETS = [
-    {% for market in markets %}
-        {id: '{{ market.id }}', name: '{{ market.name }}'},
-    {% endfor %}
-];
-
 document.addEventListener('DOMContentLoaded', function() {
     const searchResults = document.getElementById('searchResults');
     const createOfferUrlTemplate = '{{ create_offer_url_template }}';
     const searchFormArea = document.getElementById('searchFormArea');
     const productSelect = document.getElementById('id_product');
     const marketCheckboxes = document.querySelectorAll('.market-checkbox');
+    // Removed Django loop to fix JS syntax errors
+    // const MARKETS = [
+    //     {% for market in markets %}
+    //         {id: '{{ market.id }}', name: '{{ market.name }}'},
+    //     {% endfor %}
+    // ];
 
     function renderOfferCards(offers) {
         let resultsHtml = '';
         offers.forEach(offer => {
             resultsHtml += `
-                <div class="list-group-item list-group-item-action bg-dark text-light border-secondary d-flex flex-column flex-md-row justify-content-between align-items-md-center align-items-start">
+                <div class="list-group-item list-group-item-action d-flex flex-column flex-md-row justify-content-between align-items-md-center align-items-start">
                     <div class="flex-grow-1 me-3">
                         <h7 class="mb-1">${offer.title}</h7>
-                        <p class="mb-1 small text-muted">Ссылка: <a href="${offer.url}" target="_blank" class="text-info">${offer.url}</a></p>
+                        <p class="mb-1 small text-muted">Ссылка: <a href="${offer.url}" target="_blank">${offer.url}</a></p>
                         <div class="price-info mt-auto">
-                            <span class="text-success">${offer.current_price}</span>
+                            <span class="price">${offer.current_price}</span>
                         </div>
                     </div>
                     <button class="btn btn-sm btn-success add-offer-btn align-self-end align-self-md-center mt-2 mt-md-0"
@@ -186,84 +183,130 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         });
         searchResults.innerHTML = resultsHtml;
-        initAddOfferButtons(productSelect ? productSelect.value : 1);
+        // Check if productSelect exists before accessing its value
+        if (productSelect) {
+            initAddOfferButtons(productSelect.value);
+        } else {
+            // Handle the case where productSelect doesn't exist (e.g., on edit page)
+            // Maybe disable search or show a message
+            console.log('Product select element not found for initializing add offer buttons.');
+             // If on the edit page, the product ID is likely in the URL or object
+             // Need to adjust initAddOfferButtons or how it's called for edit page
+        }
     }
 
     function initAddOfferButtons(productId) {
-        document.querySelectorAll('.add-offer-btn').forEach(button => {
+        document.querySelectorAll('#searchResults .add-offer-btn').forEach(button => {
             button.addEventListener('click', function() {
                 const marketId = this.getAttribute('data-market-id');
                 const price = this.getAttribute('data-price');
                 const url = this.getAttribute('data-url');
                 const offerTitle = this.getAttribute('data-title');
-                const formData = new FormData();
-                formData.append('market_id', marketId);
-                formData.append('price', price);
-                formData.append('url', url);
-                formData.append('product_id', productId);
-                formData.append('title', offerTitle);
-                const createOfferUrl = createOfferUrlTemplate.replace('/0/', '/' + productId + '/');
-                fetch(createOfferUrl, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        throw new Error(data.error);
-                    }
-                    alert('Предложение успешно добавлено');
-                    this.disabled = true;
-                    this.textContent = 'Добавлено';
-                    this.classList.remove('btn-success');
-                    this.classList.add('btn-secondary');
-                })
-                .catch(error => {
-                    alert(`Ошибка при добавлении предложения: ${error.message}`);
-                    console.error('Add Offer Error:', error);
-                });
+
+                // Find the manual offer form elements
+                const manualOfferForm = document.getElementById('manualOfferForm');
+                if (!manualOfferForm) {
+                    console.error('Manual offer form not found!');
+                    return;
+                }
+
+                // Populate the manual offer form fields
+                // Assuming the form fields have IDs like id_<fieldname>
+                const marketField = manualOfferForm.querySelector('#id_market');
+                const priceField = manualOfferForm.querySelector('#id_price');
+                const urlField = manualOfferForm.querySelector('#id_url');
+                const titleField = manualOfferForm.querySelector('#id_title'); // Assuming a title field exists
+                const productField = manualOfferForm.querySelector('input[name="product"]'); // Hidden product field
+
+                if (marketField) marketField.value = marketId;
+                if (priceField) priceField.value = price;
+                if (urlField) urlField.value = url;
+                if (titleField) titleField.value = offerTitle; // Populate title field
+                if (productField) productField.value = productId; // Set product ID
+
+                // You might want to scroll to the manual form or highlight it
+                manualOfferForm.scrollIntoView({ behavior: 'smooth' });
+                // Optionally, disable the search results area after selection
+                // searchResults.style.pointerEvents = 'none';
+                // searchResults.style.opacity = '0.5';
             });
         });
     }
 
-    if (searchFormArea) {
-        searchFormArea.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const productId = productSelect ? productSelect.value : 1;
-            const selectedMarkets = Array.from(marketCheckboxes)
-                .filter(checkbox => checkbox.checked)
-                .map(checkbox => checkbox.value);
-            if (selectedMarkets.length === 0) {
-                alert('Пожалуйста, выберите хотя бы один маркет');
-                return;
-            }
-            // AJAX-запрос к Django view
-            const params = new URLSearchParams();
-            params.append('product_id', productId);
-            selectedMarkets.forEach(id => params.append('market_ids[]', id));
-            fetch('/search_market_offers/?' + params.toString(), {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.results && data.results.length > 0) {
-                    renderOfferCards(data.results);
-                } else {
-                    searchResults.innerHTML = '<div class="alert alert-info mt-3">Нет предложений для выбранных маркетов.</div>';
-                }
-            })
-            .catch(error => {
-                searchResults.innerHTML = `<div class="alert alert-danger mt-3">Ошибка при поиске: ${error.message}</div>`;
-            });
-        });
+    // Initial setup if on add page and product is pre-selected
+    if (productSelect && productSelect.value) {
+        // Depending on your backend, you might want to trigger a search here
+        // or just ensure the add buttons are ready if search results are loaded later
+        // For now, just ensuring initAddOfferButtons is called after potential search
     }
+
+    // Handle search form submission
+    searchFormArea.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const productName = document.getElementById('product_name_search').value;
+        const selectedMarkets = Array.from(marketCheckboxes)
+            .filter(checkbox => checkbox.checked)
+            .map(checkbox => checkbox.value);
+
+        if (!productName || selectedMarkets.length === 0) {
+            alert('Пожалуйста, введите название товара и выберите хотя бы один маркет.');
+            return;
+        }
+
+        // Get product ID from the main form's product select field
+        const productId = productSelect ? productSelect.value : null; // Get product ID
+
+        if (!productId) {
+             alert('Не удалось определить товар для поиска.');
+            return;
+        }
+
+        // Replace with your actual AJAX call to the search API
+        // Example using fetch:
+        fetch('{% url "search_market_offers" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                product_name: productName,
+                markets: selectedMarkets,
+                product_id: productId // Pass product ID to backend
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Response from search_market_offers:', data);
+            // Check if the response indicates an error
+            if (data.error) {
+                 searchResults.innerHTML = '<div class="alert alert-danger mt-3">Ошибка при поиске предложений: ' + data.error + '</div>';
+            } else if (data.results) { // Check for successful results key
+                if (data.results.length > 0) {
+                    renderOfferCards(data.results); // Use data.results
+                } else { // No offers found
+                    searchResults.innerHTML = '<div class="alert alert-info mt-3">Предложения не найдены.</div>';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error during offer search:', error);
+            searchResults.innerHTML = '<div class="alert alert-danger mt-3">Произошла ошибка при поиске предложений.</div>';
+        });
+    });
+
+    // Add event listeners for the dynamically created "Добавить" buttons
+    // Since these buttons are added dynamically, use event delegation
+    searchResults.addEventListener('click', function(e) {
+        if (e.target.classList.contains('add-offer-btn')) {
+            // The logic to populate the form is now inside initAddOfferButtons,
+            // which is called after rendering search results.
+            // This click listener is still useful if you add other actions later.
+            // For now, it just ensures the event doesn't do default actions if needed.
+        }
+    });
 });
 </script>
-{% endblock %}
-{% endblock %} 
+{% endblock extra_js %}
+
+{% endblock content %}

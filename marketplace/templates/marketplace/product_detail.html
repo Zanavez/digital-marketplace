@@ -36,12 +36,10 @@
             <h1 class="display-5 mb-3 product-title d-flex align-items-center">
                 <i class="fas fa-gamepad me-2 text-accent"></i> {{ product.name }}
             </h1>
-            <div class="mb-3">
-                {% if product.platform_price > 0 %}
-                <span class="badge bg-success fs-6 py-2 px-3 mb-2">
-                    <i class="fas fa-tag me-1"></i> Цена на платформе: <span class="fw-bold">{{ product.platform_price }} руб.</span>
-                </span>
-                {% endif %}
+            <div class="platform-price-section mb-2 d-flex align-items-center gap-2">
+                <i class="fas fa-tag"></i>
+                <span class="fw-bold">Цена на платформе:</span>
+                <span class="price-value ms-1">{{ product.platform_price }} руб.</span>
             </div>
             <div class="mb-4">
                 <h5 class="text-muted mb-2"><i class="fas fa-info-circle me-2"></i>Описание:</h5>
@@ -125,7 +123,7 @@
                                         <a href="{% url 'offer_update' offer.pk %}" class="btn btn-sm btn-warning">
                                             <i class="fas fa-edit me-1"></i>Изменить
                                         </a>
-                                        <a href="{% url 'delete_fake_offer' pk=offer.id %}" class="btn btn-sm btn-danger ms-2">
+                                        <a href="{% url 'offer_delete' offer.pk %}" class="btn btn-sm btn-danger ms-2">
                                             <i class="fas fa-trash me-1"></i>Удалить
                                         </a>
                                     </div>
@@ -185,10 +183,16 @@
     }
     
     .platform-price-section {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
         background: var(--darker-bg);
-        padding: 1.5rem;
-        border-radius: 10px;
-        border-left: 4px solid var(--accent-color);
+        color: var(--text-light);
+        padding: 0.75rem 1.25rem;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin-bottom: 1rem;
     }
     
     .price-value {
@@ -367,6 +371,20 @@
         filter: brightness(1.1);
         color: #fff;
         text-decoration: none;
+    }
+    [data-theme="light"] .platform-price-section {
+        background: #e9f7ef;
+        color: #14532d;
+    }
+    .platform-price-section .fa-tag {
+        color: var(--accent-color);
+        font-size: 1.2em;
+    }
+    .platform-price-section .price-value {
+        color: var(--accent-color);
+        font-weight: 700;
+        font-size: 1.15em;
+        text-shadow: none;
     }
 </style>
 {% endblock %} 

@@ -24,6 +24,7 @@ urlpatterns = [
     path('product/<int:pk>/delete/', views.ProductDeleteView.as_view(), name='product_delete'),
     path('offer/new/<int:product>/', views.OfferCreateView.as_view(), name='offer_create'),
     path('offer/<int:pk>/edit/', views.OfferUpdateView.as_view(), name='offer_update'),
+    path('offer/<int:pk>/delete/', views.OfferDeleteView.as_view(), name='offer_delete'),
     
     # Автоматический поиск предложений
     path('search_market_offers/', views.search_market_offers, name='search_market_offers'),

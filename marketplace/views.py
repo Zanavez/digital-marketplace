@@ -392,10 +392,19 @@ def search_market_offers(request):
             print(f"[DEBUG] POST product_id={product_id}, market_ids={market_ids}", file=sys.stderr)
             if not product_id or not market_ids:
                 return JsonResponse({'results': [], 'product_id': product_id, 'debug': 'no product_id or market_ids', 'all_fake_offers': all_fake_offers_debug()})
+            
+            # Поиск в обычных предложениях
             offers = Offer.objects.filter(product_id=product_id, market_id__in=[int(mid) for mid in market_ids])
             debug_ids = list(offers.values_list('id', flat=True))
             print(f"[DEBUG] Найдено Offer: {len(debug_ids)} ids={debug_ids}", file=sys.stderr)
+            
+            # Поиск в fake предложениях
+            fake_offers = FakeOffer.objects.filter(product_id=product_id, market_id__in=[int(mid) for mid in market_ids])
+            fake_debug_ids = list(fake_offers.values_list('id', flat=True))
+            print(f"[DEBUG] Найдено FakeOffer: {len(fake_debug_ids)} ids={fake_debug_ids}", file=sys.stderr)
+            
             results = []
+            # Добавляем обычные предложения
             for offer in offers:
                 results.append({
                     'market_id': str(offer.market.id),
@@ -405,7 +414,28 @@ def search_market_offers(request):
                     'original_price': '',
                     'product_id': offer.product.id
                 })
-            return JsonResponse({'results': results, 'product_id': product_id, 'debug': {'market_ids': market_ids, 'found_ids': debug_ids}, 'all_fake_offers': all_fake_offers_debug()})
+            
+            # Добавляем fake предложения
+            for offer in fake_offers:
+                results.append({
+                    'market_id': str(offer.market.id),
+                    'title': offer.title or f'Предложение ({offer.market.name})',
+                    'url': offer.url,
+                    'current_price': f'{offer.price} руб.',
+                    'original_price': '',
+                    'product_id': offer.product.id
+                })
+                
+            return JsonResponse({
+                'results': results, 
+                'product_id': product_id, 
+                'debug': {
+                    'market_ids': market_ids, 
+                    'found_ids': debug_ids,
+                    'found_fake_ids': fake_debug_ids
+                }, 
+                'all_fake_offers': all_fake_offers_debug()
+            })
         except Exception as e:
             return JsonResponse({'error': f'Ошибка: {str(e)}'}, status=500)
     elif request.method == 'GET':
@@ -415,10 +445,19 @@ def search_market_offers(request):
         print(f"[DEBUG] GET product_id={product_id}, market_ids={market_ids}", file=sys.stderr)
         if not product_id or not market_ids:
             return JsonResponse({'results': [], 'product_id': product_id, 'debug': 'no product_id or market_ids', 'all_fake_offers': all_fake_offers_debug()})
+        
+        # Поиск в обычных предложениях
         offers = Offer.objects.filter(product_id=product_id, market_id__in=[int(mid) for mid in market_ids])
         debug_ids = list(offers.values_list('id', flat=True))
         print(f"[DEBUG] Найдено Offer: {len(debug_ids)} ids={debug_ids}", file=sys.stderr)
+        
+        # Поиск в fake предложениях
+        fake_offers = FakeOffer.objects.filter(product_id=product_id, market_id__in=[int(mid) for mid in market_ids])
+        fake_debug_ids = list(fake_offers.values_list('id', flat=True))
+        print(f"[DEBUG] Найдено FakeOffer: {len(fake_debug_ids)} ids={fake_debug_ids}", file=sys.stderr)
+        
         results = []
+        # Добавляем обычные предложения
         for offer in offers:
             results.append({
                 'market_id': str(offer.market.id),
@@ -428,7 +467,28 @@ def search_market_offers(request):
                 'original_price': '',
                 'product_id': offer.product.id
             })
-        return JsonResponse({'results': results, 'product_id': product_id, 'debug': {'market_ids': market_ids, 'found_ids': debug_ids}, 'all_fake_offers': all_fake_offers_debug()})
+        
+        # Добавляем fake предложения
+        for offer in fake_offers:
+            results.append({
+                'market_id': str(offer.market.id),
+                'title': offer.title or f'Предложение ({offer.market.name})',
+                'url': offer.url,
+                'current_price': f'{offer.price} руб.',
+                'original_price': '',
+                'product_id': offer.product.id
+            })
+            
+        return JsonResponse({
+            'results': results, 
+            'product_id': product_id, 
+            'debug': {
+                'market_ids': market_ids, 
+                'found_ids': debug_ids,
+                'found_fake_ids': fake_debug_ids
+            }, 
+            'all_fake_offers': all_fake_offers_debug()
+        })
     else:
         return JsonResponse({'error': 'Разрешен только метод POST или GET'}, status=405)
 

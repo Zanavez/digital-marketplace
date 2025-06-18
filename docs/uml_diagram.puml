@@ -1,78 +1,78 @@
 @startuml
 ' Сбалансированная диаграмма: не слишком высокая и не слишком широкая
 
-top to bottom direction
+left to right direction
 skinparam linetype ortho
-skinparam nodesep 120
-skinparam ranksep 30
+skinparam nodesep 40
+skinparam ranksep 40
 skinparam padding 8
 skinparam roundcorner 20
 
-actor User as user
-actor Manager as manager
-actor Admin as admin
-actor Market as market
+actor "Пользователь" as user
+actor "Менеджер" as manager
+actor "Администратор" as admin
+actor "Магазин" as market
 
-rectangle "Digital Marketplace System" {
+rectangle "Система Цифровой Торговой Площадки" {
     ' Первый ряд пакетов
-    package "Auth" {
-        [User Registration]
-        [Login]
-        [Password Reset]
+    package "Аутентификация" {
+        [Регистрация пользователя]
+        [Вход в систему]
+        [Сброс пароля]
     }
-    package "Products" {
-        [Product Catalog]
-        [Product Search]
-        [Price Comparison]
+    package "Товары" {
+        [Каталог товаров]
+        [Поиск товаров]
+        [Сравнение цен]
     }
-    package "Shopping" {
-        [Shopping Cart]
-        [Order Processing]
-        [Purchase History]
+    package "Покупки" {
+        [Корзина покупок]
+        [Оформление заказа]
+        [История покупок]
     }
     ' Второй ряд пакетов
-    package "Market Integration" {
-        [Market API]
-        [Price Aggregation]
-        [Product Synchronization]
+    package "Интеграция с магазинами" {
+        [API магазина]
+        [Агрегация цен]
+        [Синхронизация товаров]
     }
-    package "Management" {
-        [User Management]
-        [Market Management]
-        [System Configuration]
+    package "Управление" {
+        [Управление пользователями]
+        [Управление магазинами]
+        [Настройки системы]
     }
 }
 
 ' Связи пользователя
-user --> [User Registration]
-user --> [Login]
-user --> [Product Catalog]
-user --> [Product Search]
-user --> [Price Comparison]
-user --> [Shopping Cart]
-user --> [Order Processing]
-user --> [Purchase History]
+user --> [Регистрация пользователя]
+user --> [Вход в систему]
+user --> [Каталог товаров]
+user --> [Поиск товаров]
+user --> [Сравнение цен]
+user --> [Корзина покупок]
+user --> [Оформление заказа]
+user --> [История покупок]
 
 ' Связи менеджера
-manager --> [Product Management]
-manager --> [Market Integration]
-manager --> [Shopping]
+manager --> [Управление товарами]
+manager --> [Интеграция с магазинами]
+manager --> [Покупки]
 
 ' Связи администратора
-admin --> [Admin Panel]
-admin --> [User Management]
-admin --> [Market Management]
-admin --> [System Configuration]
+admin --> [Панель администратора]
+admin --> [Управление пользователями]
+admin --> [Управление магазинами]
+admin --> [Настройки системы]
 
 ' Связи магазина
-market --> [Market API]
-market --> [Price Aggregation]
+market --> [API магазина]
+market --> [Агрегация цен]
 
 ' Включения и расширения
-[Product Search] ..> [Price Comparison] : <<include>>
-[Order Processing] ..> [Purchase History] : <<include>>
-[Market API] ..> [Price Aggregation] : <<include>>
-[Product Catalog] ..> [Product Search] : <<extend>>
-[Market Integration] ..> [Product Synchronization] : <<extend>>
-[Admin Panel] ..> [System Configuration] : <<extend>>
+[Поиск товаров] ..> [Сравнение цен] : <<include>>
+[Оформление заказа] ..> [История покупок] : <<include>>
+[API магазина] ..> [Агрегация цен] : <<include>>
+[Каталог товаров] ..> [Поиск товаров] : <<extend>>
+[Интеграция с магазинами] ..> [Синхронизация товаров] : <<extend>>
+[Панель администратора] ..> [Настройки системы] : <<extend>>
 @enduml 

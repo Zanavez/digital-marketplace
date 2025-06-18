@@ -7,6 +7,8 @@
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
+import os
+
 BOT_NAME = "market_parser"
 
 SPIDER_MODULES = ["market_parser.spiders"]
@@ -72,7 +74,7 @@ FEED_EXPORT_ENCODING = "utf-8"
 LOG_ENCODING = 'utf-8'
 
 # API Keys
-STEAM_API_KEY = '3C4F4D787A2C35DD691BA03BE9E9AC2D'  # Replace with your actual Steam API key
+STEAM_API_KEY = 'RANDOM_KEY_1234567890ABCDEF'  # Steam API key заменён на случайное значение для демонстрации
 
 # Configure maximum concurrent requests performing at the same time to the same domain
 CONCURRENT_REQUESTS_PER_DOMAIN = 16

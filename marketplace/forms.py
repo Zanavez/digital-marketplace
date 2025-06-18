@@ -89,8 +89,12 @@ class OfferForm(forms.ModelForm):
         }
 
 class CustomAuthenticationForm(AuthenticationForm):
-    username = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Имя пользователя'}))
-    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Пароль'}))
+    error_messages = {
+        'invalid_login': 'Пожалуйста, введите правильные никнейм и пароль. Оба поля чувствительны к регистру.',
+        'inactive': 'Этот аккаунт неактивен.',
+    }
+    username = forms.CharField(label='Никнейм', widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Имя пользователя'}))
+    password = forms.CharField(label='Пароль', widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Пароль'}))
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
